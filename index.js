@@ -101,7 +101,6 @@ function getRepo (distFolder) {
       } else {
         reject();
       }
-      separation();
     });
   });
 }
@@ -116,6 +115,7 @@ function getRepo (distFolder) {
  */
 function install (dest) {
   return new Promise(function (resolve, reject) {
+    console.log("starting the modules installation");
     process.chdir(dest);
     var child = exec('npm install',
     function (error, stdout, stderr) {
@@ -194,6 +194,7 @@ program
     createFolder(dest);
     getRepo(dest).then(function(){
       console.log(chalk.bold.green("repo was sucessfully cloned"));
+      separation();
 
       install(dest).then(function(){
         console.log(chalk.green("npm install done, node modules were installed"));
@@ -207,7 +208,7 @@ program
           separation();
   
           // loads the json file 
-          var packageJSON = require("./"+dest+"/package.json");
+          var packageJSON = require("./package.json");
           // updates the package.json of the destination folder 
           updateJson(packageJSON, dest);
         })
