@@ -1,13 +1,41 @@
 #!/usr/bin/env node
 
+/**
+ * This project is distributed under the MIT license, you are free to 
+ * use it however you want :) 
+ * 
+ * This CLI is for now really simple: it clones the repo on which the 
+ * boilerplate is stored, clean the .git folder, run npm install into
+ * the folder, and then ask for informations to update the package.json 
+ * 
+ * This was only made to get the creenv-boilerplate on your computer
+ * faster, nothing else. I'm pretty sure there are some cases i'm not 
+ * covering, so if you encounter an error, feel free to report it to 
+ * the git repo on this project so that we can work on it. 
+ * 
+ * The goal on creative environment is to make the process of setting 
+ * up an es6 environment easy, by doing the less possible. This way 
+ * you are still free you make your own choices regarding on the 
+ * developement of your app. 
+ * 
+ * [https://github.com/bcrespy/create-creenv](repo)
+ * [https://github.com/bcrespy/create-creenv/issues](report)
+ * 
+ * Originally developed by Baptiste Crespy 
+ * ---------
+ * Contributors 
+ * My mum :(
+ */
+
 var fs              = require('fs');
+var rimraf          = require('rimraf')
 var program         = require('commander');
 var chalk           = require('chalk');
 var package         = require('./package.json');
 var git             = require('simple-git')();
 var spawn           = require('cross-spawn');
 var readline        = require('readline-sync');
-
+var exec            = require('child_process').exec;
 
 var SPACES          = "                             ";
 var REPO            = "https://github.com/bcrespy/creenv-boilerplate.git";
@@ -26,6 +54,7 @@ function separation (color) {
   console.log(chalk[color](SPACES));
 }
 
+
 /**
  * Basic informations about the begining of the installation 
  */
@@ -34,6 +63,7 @@ function startInfos () {
   console.log("starting installation");
   separation();
 }
+
 
 /**
  * Creates a folder if it doesn't exist and prints informations
@@ -53,63 +83,79 @@ function createFolder (folder) {
   separation();
 }
 
+
 /**
  * Clone the creenv boilerplate repository into the destination 
  * folder. 
  * 
  * @param {string} distFolder the folder in which to clone
+ * 
+ * @return {Promise} resolve when repo is cloned
  */
 function getRepo (distFolder) {
-  console.log("fetching the repo");
-  git.clone(REPO, distFolder);
-  console.log("repo cloned");
-  separation();
+  return new Promise(function (resolve, reject) {
+    console.log("fetching the repo");
+    git.clone(REPO, distFolder, null, function (arg) {
+      if (arg === null) {
+        resolve();
+      } else {
+        reject();
+      }
+      separation();
+    });
+  });
 }
+
 
 /**
  * Run the npm install command into the dest folder
  * 
  * @param {string} dest the destination where npm install will run
+ * 
+ * @return {Promise} resolve when npm install is done
  */
 function install (dest) {
-  return new Promise(function (resolve, reject){
+  return new Promise(function (resolve, reject) {
     process.chdir(dest);
-    let command = 'npm',
-        args = [
-          'install',
-          '--save',
-          '--save-exact',
-          '--loglevel',
-          'error',
-        ];
-
-    var child = spawn(command, args, { stdio: 'inherit' });
-    child.on('close', function (code, signal) {
-      if (code !== 0) {
-        reject(signal);
-        return;
-      }
-      resolve();
-      separation();
+    var child = exec('npm install',
+    function (error, stdout, stderr) {
+        console.log(chalk.grey(stdout));
+        console.log(chalk.grey(stderr));
+        if (error !== null) {
+          console.log(error);
+          reject();
+        } else {
+          resolve();
+        }
+        separation();
     });
   })
 }
 
+
+/**
+ * Removes the .git folder so that the project is not linked to 
+ * the creenv-boilerplate repo 
+ * 
+ * @return {Promise} resolve when the folder is deleted
+ */
 function removeGitRepo () {
   return new Promise((resolve, reject) => {
     console.log("removing the git repo currently on the project");
-    var child = spawn("rm", ["-rf", ".git"], { stdio: 'inherit' });
-    child.on('close', function (code, signal) {
-      if (code !== 0) {
-        reject(signal);
-        return;
-      } else {
-        resolve(0);
-      }
-    });
+    rimraf('/.git', function (error) {
+      resolve(error === null ? 0 : 1);
+    }); 
   });
 }
 
+
+/**
+ * Ask the user for informations about his project to update the
+ * package.json file, then saves the file into the project directory 
+ * 
+ * @param {object} json the JSON object from the package.json
+ * @param {string} folder the folder path in which the package was from
+ */
 function updateJson (json, folder) {
   var answer = null;
 
@@ -146,27 +192,33 @@ program
     if (dest === undefined) dest = DEFAULT_FOLDER;
     startInfos();
     createFolder(dest);
-    getRepo(dest);
-    install(dest).then(function(){
-      console.log(chalk.green("npm install done, node modules were installed"));
+    getRepo(dest).then(function(){
+      console.log(chalk.bold.green("repo was sucessfully cloned"));
 
-      removeGitRepo().then(function (ret) {
-        if (ret != 0 ) {
-          console.log(chalk.bold.red("could not remove the git repository from the folder. you can either do so manually change the remote\n\n"));
-        } else {
-          console.log(chalk.green("git repo was removed"));
-        }
-        separation();
+      install(dest).then(function(){
+        console.log(chalk.green("npm install done, node modules were installed"));
+  
+        removeGitRepo().then(function (ret) {
+          if (ret != 0 ) {
+            console.log(chalk.bold.red("could not remove the git repository from the folder. you can either do so manually change the remote\n\n"));
+          } else {
+            console.log(chalk.green("git repo was removed"));
+          }
+          separation();
+  
+          // loads the json file 
+          var packageJSON = require("./"+dest+"/package.json");
+          // updates the package.json of the destination folder 
+          updateJson(packageJSON, dest);
+        })
+      }).catch(function(error){
+        console.log(chalk.bold.red("installation failed. the project is still in its early development so please report the conditions in which this error occured, thanks :)"))
+        console.log("\n\n"+error+"\n\n");
+      });
 
-        // loads the json file 
-        var packageJSON = require("./package.json");
-        // updates the package.json of the destination folder 
-        updateJson(packageJSON, dest);
-      })
-    }).catch(function(error){
-      console.log(chalk.bold.red("installation failed. the project is still in its early development so please report the conditions in which this error occured, thanks :)"))
-      console.log("\n\n"+error+"\n\n");
-    });
+    }).catch(function() {
+      console.log(chalk.bold.red("could not clone the repo. check if your internet is on, if it is please report this bug :)"))
+    })
   });
 
 program.parse(process.argv);
