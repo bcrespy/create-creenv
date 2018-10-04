@@ -28,5 +28,12 @@
   "bugs": {
     "url": "https://github.com/bcrespy/create-creenv/issues"
   },
-  "homepage": "https://github.com/bcrespy/create-creenv#readme"
+  "homepage": "https://github.com/bcrespy/create-creenv#readme",
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "commander": "^2.18.0",
+    "cross-spawn": "^6.0.5",
+    "readline-sync": "^1.4.9",
+    "simple-git": "^1.104.0"
+  }
 }
