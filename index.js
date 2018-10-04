@@ -115,7 +115,7 @@ function getRepo (distFolder) {
  */
 function install (dest) {
   return new Promise(function (resolve, reject) {
-    console.log("starting the modules installation");
+    console.log("installing node modules");
     process.chdir(dest);
     var child = exec('npm install',
     function (error, stdout, stderr) {
@@ -208,7 +208,7 @@ program
           separation();
   
           // loads the json file 
-          var packageJSON = require("./package.json");
+          var packageJSON = require(process.cwd()+"/package.json");
           // updates the package.json of the destination folder 
           updateJson(packageJSON, dest);
         })
