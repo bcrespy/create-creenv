@@ -1,6 +1,6 @@
 {
   "name": "create-creenv",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "CLI that creates a ready-to-use environment for developing your creative ideas using es6 !",
   "main": "index.js",
   "bin": {
