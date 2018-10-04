@@ -1,0 +1,32 @@
+{
+  "name": "create-creenv",
+  "version": "0.0.1",
+  "description": "CLI that creates a ready-to-use environment for developing your creative ideas using es6 !",
+  "main": "index.js",
+  "bin": {
+    "create-creenv": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"prout heheh\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bcrespy/create-creenv.git"
+  },
+  "keywords": [
+    "create",
+    "creenv",
+    "create-creenv",
+    "creenv-create",
+    "creative",
+    "environment",
+    "es6",
+    "coding"
+  ],
+  "author": "Baptiste Crespy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bcrespy/create-creenv/issues"
+  },
+  "homepage": "https://github.com/bcrespy/create-creenv#readme"
+}
