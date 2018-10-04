@@ -34,6 +34,7 @@
     "commander": "^2.18.0",
     "cross-spawn": "^6.0.5",
     "readline-sync": "^1.4.9",
+    "rimraf": "^2.6.2",
     "simple-git": "^1.104.0"
   }
 }
