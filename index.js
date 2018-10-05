@@ -66,6 +66,17 @@ function startInfos () {
 
 
 /**
+ * Called once the installation has succeeded and is completed
+ */
+function onInstallationCompleted () {
+  console.log("\n\n");
+  console.log(chalk.bold.green("Installation is done (ง •̀_•́)ง\n"));
+  console.log(chalk.bold.blue("See https://github.com/bcrespy/creenv-boilerplate#creenv-the-creative-environment for more informations on how to use Creenv"));
+  console.log("\n\n");
+}
+
+
+/**
  * Creates a folder if it doesn't exist and prints informations
  * about the process
  * 
@@ -142,7 +153,7 @@ function install (dest) {
 function removeGitRepo () {
   return new Promise((resolve, reject) => {
     console.log("removing the git repo currently on the project");
-    rimraf('/.git', function (error) {
+    rimraf('.git', function (error) {
       resolve(error === null ? 0 : 1);
     }); 
   });
@@ -177,7 +188,7 @@ function updateJson (json, folder) {
     if (err) {
       console.log(chalk.bold.red("\n\ncould not write the package.json, check it if you want to update it"))
     }
-    console.log(chalk.bold.green("\n\nyour project is ready to be used. have a good time :)\n\n"));
+    onInstallationCompleted();
   });
 }
 
