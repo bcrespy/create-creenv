@@ -41,6 +41,9 @@ var REPOS           = {
                         light: "https://github.com/bcrespy/creenv-boilerplate-light.git"
                       };
 
+var PRINT_LOADER    = false;
+var LOADING_CHARS   = [ "( ˘ ³˘)♥", "o(╥﹏╥)o", "( ͡° ͜ʖ ͡°)", "(◕‿◕✿)", "(☉_☉)", "٩ʕ•͡×•ʔ۶", "☜(⌒▽⌒)☞", "(‿|‿)", "( . Y . )", "※\(^o^)/※" ];
+
 
 
 /**
@@ -51,7 +54,7 @@ var REPOS           = {
  */
 function separation (color) {
   if (color === undefined) color = "bgBlue";
-  console.log(chalk[color](SPACES));
+  console.log("\n"+chalk[color](SPACES)+"\n");
 }
 
 
@@ -66,21 +69,79 @@ function startInfos () {
 
 
 /**
+ * Start or end the loader depending on the yes value
+ * 
+ * @param {boolean} yes true if it's a start
+ */
+function load (yes) {
+  if (yes === undefined) yes = true;
+  if (yes) {
+    PRINT_LOADER = true;
+    loader();
+  } else {
+    PRINT_LOADER = false;
+    process.stdout.write("\r");
+  }
+}
+
+
+/**
+ * Display a funny loader to show it's doint something 
+ */
+function loader (str) {
+  if (PRINT_LOADER) {
+    var cols = process.stdout.columns;
+    str = LOADING_CHARS[Math.floor(Math.random()*LOADING_CHARS.length)];
+    var startAt = Math.round(cols/2)-str.length/2;
+    var spaces = "";
+    for (let i = 0;i<startAt;i++) spaces+=" ";
+    process.stdout.write(spaces+chalk.bold.red(str)+"\r");
+    setTimeout(function () {
+      loader();
+    }, 150);
+  } else {
+  }
+}
+
+
+/**
+ * Called once the installation has succeeded and is completed
+ */
+function onInstallationCompleted () {
+  console.log("\n\n");
+  console.log(chalk.bold.green("Installation is done (ง •̀_•́)ง\n"));
+  console.log(chalk.bold.blue("See https://github.com/bcrespy/creenv-boilerplate#creenv-the-creative-environment for more informations on how to use Creenv"));
+  console.log("\n\n");
+}
+
+
+/**
  * Creates a folder if it doesn't exist and prints informations
  * about the process
  * 
  * @param {string} folder the folder to create
  */
 function createFolder (folder) {
-  console.log("creating folder "+chalk.bold(folder));
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder);
-    // folder was created
-    console.log(chalk.green("folder created"));
-  } else {
-    console.log("folder already existing, moving to next step");
-  }
-  separation();
+  return new Promise(function (resolve, reject) {
+    console.log("creating folder "+chalk.bold(folder));
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder);
+      // folder was created
+      console.log(chalk.bold.green("folder created"));
+      separation();
+      resolve();
+    } else {
+      console.log(chalk.bold.red("folder "+chalk.italic(folder)+" already exists, installation needs an empty folder."));
+      answer = readline.question("Do you want to empty the folder "+chalk.italic(folder)+" ? (y/n) ");
+      if (answer === "yes" || answer === "y" || answer === "YES" || answer === "Y") {
+        rimraf(folder, function (error) {
+          createFolder(folder).then(resolve);
+        });
+      } else {
+        console.log(chalk.bold.red("\naborting installation\n\n"));
+      }
+    }
+  });
 }
 
 
@@ -96,7 +157,9 @@ function createFolder (folder) {
 function getRepo (distFolder, repo) {
   return new Promise(function (resolve, reject) {
     console.log("fetching the repo");
+    load(true);
     git.clone(repo, distFolder, null, function (arg) {
+      load(false);
       if (arg === null) {
         resolve();
       } else {
@@ -117,14 +180,14 @@ function getRepo (distFolder, repo) {
 function install (dest) {
   return new Promise(function (resolve, reject) {
     console.log("installing node modules");
+    load(true);
     process.chdir(dest);
     var child = exec('npm install',
     function (error, stdout, stderr) {
-      console.log(chalk.grey(stdout));
-      console.log(chalk.grey(stderr));
       process.chdir("../");
+      load(false);
       if (error !== null) {
-        console.log(error);
+        console.log(chalk.red(stderr));
         reject();
       } else {
         resolve();
@@ -178,12 +241,11 @@ function updateJson (json, folder) {
     json.bugs = {};
     json.homepage = {};
 
-    fs.writeFile(folder+"/package.json", JSON.stringify(json, null, 2), function (err) {
+    fs.writeFile("./package.json", JSON.stringify(json, null, 2), function (err) {
       if (err) {
-        reject(err);
-      } else {
-        resolve();
+        console.log(chalk.bold.red("\n\ncould not write the package.json, check it if you want to update it"))
       }
+      resolve();
     });
   });
 }
@@ -222,49 +284,52 @@ program
     let repo = REPOS[cmd.mode] !== undefined ? REPOS[cmd.mode] : REPOS["default"];
 
     startInfos();
-    createFolder(dest);
-    getRepo(dest, repo).then(function () {
-      console.log(chalk.bold.green("repo was sucessfully cloned"));
-      separation();
-
-      install(dest).then(function () {
-        console.log(chalk.green("npm install done, node modules were installed"));
+    createFolder(dest).then(function(){
+      getRepo(dest, repo).then(function(){
+        console.log(chalk.bold.green("repo was sucessfully cloned"));
+        separation();
   
-        removeGitRepo().then(function (ret) {
-          if (ret != 0 ) {
-            console.log(chalk.bold.red("could not remove the git repository from the folder. you can either do so manually change the remote\n\n"));
-          } else {
-            console.log(chalk.green("git repo was removed"));
-          }
-          separation();
-  
-          // loads the json file 
-          var packageJSON = require(process.cwd()+"/"+dest+"/package.json");
-          
-          // updates the package.json of the destination folder 
-          updateJson(packageJSON, dest).then(function () {
-            separation();
-
-            // if asked, we remove the comments from the /src folder 
-            if (cmd.nocomment) {
-              stripComments(dest).then(function () {
-                console.log(chalk.bold.green("\n\nyour project is ready to be used. have a good time :)\n\n"));
-              });
+        install(dest).then(function(){
+          console.log(chalk.bold.green("npm install done, node modules were installed"));
+    
+          removeGitRepo().then(function (ret) {
+            if (ret != 0 ) {
+              console.log(chalk.bold.red("could not remove the git repository from the folder. you can either do so manually change the remote\n\n"));
             } else {
-              console.log(chalk.bold.green("\n\nyour project is ready to be used. have a good time :)\n\n"));
+              console.log(chalk.bold.green("git repo was removed"));
             }
-          }).catch(function (error) {
-            console.log(chalk.bold.red("\n\ncould not write the package.json, check it if you want to update it"));
-          });
-        });
-      }).catch(function (error) {
-        console.log(chalk.bold.red("installation failed. the project is still in its early development so please report the conditions in which this error occured, thanks :)"))
-        console.log("\n\n"+error+"\n\n");
-      });
+            separation();
+    
+            // loads the json file 
+            var packageJSON = require(process.cwd()+"/"+dest+"/package.json");
+            
+            // updates the package.json of the destination folder 
+            updateJson(packageJSON, dest).then(function () {
+              separation();
 
-    }).catch(function() {
-      console.log(chalk.bold.red("could not clone the repo. check if your internet is on, if it is please report this bug :)"))
-    })
+              // if asked, we remove the comments from the /src folder 
+              if (cmd.nocomment) {
+                stripComments(dest).then(function () {
+                  console.log(chalk.bold.green("\n\nyour project is ready to be used. have a good time :)\n\n"));
+                  onInstallationCompleted();
+                });
+              } else {
+                console.log(chalk.bold.green("\n\nyour project is ready to be used. have a good time :)\n\n"));
+                onInstallationCompleted();
+              }
+            }).catch(function (error) {
+              console.log(chalk.bold.red("\n\ncould not write the package.json, check it if you want to update it"));
+            });
+          });
+        }).catch(function (error) {
+          console.log(chalk.bold.red("installation failed. the project is still in its early development so please report the conditions in which this error occured, thanks :)"))
+          console.log("\n\n"+error+"\n\n");
+        });
+
+      }).catch(function() {
+        console.log(chalk.bold.red("could not clone the repo. check if your internet is on, if it is please report this bug :)"))
+      })
+    });
   });
 
 program.parse(process.argv);
