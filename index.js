@@ -38,7 +38,8 @@ var DEFAULT_FOLDER  = "creenv";
 var REPOS           = {
                         default: "https://github.com/bcrespy/creenv-boilerplate.git",
                         demo: "https://github.com/bcrespy/creenv-boilerplate-demo.git",
-                        light: "https://github.com/bcrespy/creenv-boilerplate-light.git"
+                        light: "https://github.com/bcrespy/creenv-boilerplate-light.git",
+                        audio: "https://github.com/bcrespy/creenv-boilerplate-audio-demo.git"
                       };
 
 var PRINT_LOADER    = false;
@@ -274,7 +275,7 @@ function stripComments (dest) {
 program
   .version(package.version)
   .arguments('<dest>')
-  .option('-m, --mode <mode>', 'the type of project you want to install default|demo|light')
+  .option('-m, --mode <mode>', 'the type of project you want to install default|demo|light|audio')
   .option('-n, --nocomment', 'remove all the comments within the js files')
   .option('-v, --version', 'display the current version of the cli')
   .action(function (dest, cmd) {
