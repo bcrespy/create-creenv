@@ -203,12 +203,14 @@ function install (dest) {
  * Removes the .git folder so that the project is not linked to 
  * the creenv-boilerplate repo 
  * 
+ * @param {string} dest the folder in which the application was installed 
+ * 
  * @return {Promise} resolve when the folder is deleted
  */
-function removeGitRepo () {
+function removeGitRepo (dest) {
   return new Promise((resolve, reject) => {
     console.log("removing the git repo currently on the project");
-    rimraf('.git', function (error) {
+    rimraf(dest+'/.git', function (error) {
       resolve(error === null ? 0 : 1);
     }); 
   });
@@ -293,7 +295,7 @@ program
         install(dest).then(function(){
           console.log(chalk.bold.green("npm install done, node modules were installed"));
     
-          removeGitRepo().then(function (ret) {
+          removeGitRepo(dest).then(function (ret) {
             if (ret != 0 ) {
               console.log(chalk.bold.red("could not remove the git repository from the folder. you can either do so manually change the remote\n\n"));
             } else {
